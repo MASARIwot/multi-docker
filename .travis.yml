@@ -1,0 +1,26 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  # ./client in the end, usually it was just ./ now we are saying for test content look at client folder
+  # because our location is different
+  # . - means = look at the current directory
+  - docker build -t tretiak/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+- docker run -e CI=true tretiak/react-test npm test
+
+after_success:
+  - docker build -t tretiak/multi-client ./client
+  - docker build -t tretiak/multi-nginx ./nginx
+  - docker build -t tretiak/multi-server ./server
+  - docker build -t tretiak/multi-worker ./worker
+  # Log in to the CLI, 1 part will extract password
+  #  2, after | => will insert password as second command
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take thous images and push them to docker hub
+  - docker push tretiak/multi-client
+  - docker push tretiak/multi-nginx
+  - docker push tretiak/multi-server
+  - docker push tretiak/multi-worker
